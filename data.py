@@ -70,34 +70,36 @@ class FileIter(DataIter):
             self.X = X[ : self.size]
             self.y = y[ : self.size]
         self.cursor = 0
-        self.data, self.label = self._read()
 
     def _read(self):
         """get two list, each list contains two elements: name and nd.array value"""
         data = {}
         label = {}
         data[self.data_name], label[self.label_name] = self._read_batch()
-        return list(data.items()), list(label.items())
+        self.data = data
+        self.label = label
 
     def _read_batch(self):
         pdb.set_trace()
-        if self.cursor + self.batch_size >= self.size:
+        if self.cursor >= self.size:
             logger.info('data read out of bound')
             raise StopIteration
-        
+
         begin = self.cursor
-        self.cursor += self.batch_size
+        if self.cursor + self.batch_size < self.size:
+            self.cursor += self.batch_size        else:
+            self.cursor = self.size - 1
         return (self.X[begin : self.cursor], self.y[begin : self.cursor])
 
     @property
     def provide_data(self):
         """The name and shape of data provided by this iterator"""
-        return [(k, tuple([1] + list(v.shape[1:]))) for k, v in self.data]
+        return [(k, v.shape) for k, v in self.data.items()]
 
     @property
     def provide_label(self):
         """The name and shape of label provided by this iterator"""
-        return [(k, tuple([1] + list(v.shape[1:]))) for k, v in self.label]
+        eturn [(k, v.shape) for k, v in self.label.items()]
 
     def get_batch_size(self):
         return self.batch_size
@@ -109,7 +111,7 @@ class FileIter(DataIter):
         self.cursor = 0
 
     def iter_next(self):
-        if(self.cursor + self.batch_size < self.size):
+        if(self.cursor < self.size):
             return True
         else:
             return False
@@ -122,7 +124,7 @@ class FileIter(DataIter):
         if self.iter_next():
             pdb.set_trace()
             self.data, self.label = self._read()
-            return mx.io.DataBatch(data = self.data[0][1], label = self.label[0][1], 
+            return mx.io.DataBatch(data = self.data, label = self.label, 
                 index = self.get_index(), pad = self.getpad())
             # return {self.data_name  :  self.data[0][1],
             #         self.label_name :  self.label[0][1]}
