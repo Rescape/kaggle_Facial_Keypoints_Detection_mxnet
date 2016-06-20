@@ -8,7 +8,7 @@ parser.add_argument('--model-prefix', type=str,
                     help='the prefix of the model to save')
 parser.add_argument('--num-epochs', type=int, default=20,
                     help='the number of training epochs')
-parser.add_argument('--batch-size', type=int, default=32,
+parser.add_argument('--batch-size', type=int, default=128,
                     help='the batch size')
 # I only have one gpu(GTX970)
 parser.add_argument('--gpus', type=str, default='0',
@@ -50,24 +50,28 @@ net = symbol.get_symbol(output_dim = 30)
 
 from data import FileIter
 
-def get_iterator(args, kv):
-    train = FileIter(
+train = FileIter(
          eval_ratio = 0.2, 
          is_val = False,
          data_name = "data",
          batch_size = args.batch_size,
-         label_name = "label"
+         label_name = "lr_label"
         )
 
-    val = FileIter(
-         eval_ratio = 0.2, 
-         is_val = True,
-         data_name = "data",
-         batch_size = 1,
-         label_name = "label"
-        )
+val = FileIter(
+     eval_ratio = 0.2, 
+     is_val = True,
+     data_name = "data",
+     batch_size = 1,
+     label_name = "lr_label"
+    )
 
-    return (train, val)
 
-import solver
-solver.fit(args, net, get_iterator)
+from solver import Solver
+model = Solver(
+    symbol = net,
+    num_epoch = args.num_epochs
+    )
+model.fit(train, val, 
+    batch_end_callback = mx.callback.Speedometer(1, 10),
+    epoch_end_callback = mx.callback.do_checkpoint(args.model_prefix))

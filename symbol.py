@@ -29,7 +29,6 @@ def get_symbol(output_dim = 30):
 	# fc (fully connect)
 	fc1 = mx.symbol.FullyConnected(data=drop3, num_hidden=500, name="fc1")
 	fc2 = mx.symbol.FullyConnected(data=fc1, num_hidden=500, name="fc2")
-	fc3 = mx.symbol.FullyConnected(data=fc1, num_hidden=30, name="fc3")
-	label = mx.symbol.Variable(name="label")
-	lr = mx.symbol.LinearRegressionOutput(data=fc3,label=label,name='lr')
+	fc3 = mx.symbol.FullyConnected(data=fc2, num_hidden=30, name="fc3")
+	lr = mx.symbol.LinearRegressionOutput(data=fc3, name='lr')
 	return lr

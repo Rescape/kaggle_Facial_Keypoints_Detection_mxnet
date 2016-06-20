@@ -52,14 +52,14 @@ class FileIter(DataIter):
         return X, y
     def __init__(self, eval_ratio = 0.2, is_val = False,
                  data_name = "data",
-                 batch_size = 1,
-                 label_name = "label"):
+                 batch_size = 128,
+                 label_name = "lr_label"):
         self.eval_ratio = eval_ratio
         self.is_val = is_val
         self.data_name = data_name
         self.label_name = label_name
         self.size = 0
-        self.batch_size = 1
+        self.batch_size = batch_size
         X, y = self._load2d() # X: (2140, 1, 96, 96), y: (2140, 30)
         if is_val:
             self.size = int(X.shape[0] * self.eval_ratio)
@@ -76,30 +76,31 @@ class FileIter(DataIter):
         data = {}
         label = {}
         data[self.data_name], label[self.label_name] = self._read_batch()
-        self.data = data
-        self.label = label
+        return (data,label)
 
     def _read_batch(self):
-        pdb.set_trace()
+        # pdb.set_trace()
         if self.cursor >= self.size:
             logger.info('data read out of bound')
+            pdb.set_trace()
             raise StopIteration
 
         begin = self.cursor
         if self.cursor + self.batch_size < self.size:
-            self.cursor += self.batch_size        else:
+            self.cursor += self.batch_size        
+        else:
             self.cursor = self.size - 1
         return (self.X[begin : self.cursor], self.y[begin : self.cursor])
 
     @property
     def provide_data(self):
         """The name and shape of data provided by this iterator"""
-        return [(k, v.shape) for k, v in self.data.items()]
+        return [('data', (self.batch_size, 1, 96, 96))]
 
     @property
     def provide_label(self):
         """The name and shape of label provided by this iterator"""
-        eturn [(k, v.shape) for k, v in self.label.items()]
+        return [('label', (self.batch_size, 20))]
 
     def get_batch_size(self):
         return self.batch_size
@@ -111,7 +112,7 @@ class FileIter(DataIter):
         self.cursor = 0
 
     def iter_next(self):
-        if(self.cursor < self.size):
+        if(self.cursor < self.size - 1):
             return True
         else:
             return False
@@ -122,11 +123,12 @@ class FileIter(DataIter):
     def next(self):
         """return one dict which contains "data" and "label" """
         if self.iter_next():
-            pdb.set_trace()
+            # pdb.set_trace()
             self.data, self.label = self._read()
             return mx.io.DataBatch(data = self.data, label = self.label, 
                 index = self.get_index(), pad = self.getpad())
             # return {self.data_name  :  self.data[0][1],
             #         self.label_name :  self.label[0][1]}
         else:
+            # pdb.set_trace()
             raise StopIteration
